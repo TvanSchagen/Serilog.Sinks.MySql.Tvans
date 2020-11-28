@@ -7,9 +7,10 @@
     <Authors>T. van Schagen</Authors>
     <Company>Uniserver</Company>
     <Product />
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <Copyright />
-    <PackageLicenseExpression>Apache 2.0</PackageLicenseExpression>
+    <PackageLicenseExpression></PackageLicenseExpression>
+    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
   </PropertyGroup>
 
   <ItemGroup>
