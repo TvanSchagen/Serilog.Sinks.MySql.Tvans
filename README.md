@@ -9,8 +9,7 @@ Provides a Serilog Sink for MySql with customizability in columns, data types.
 Default
 ```cs
 var logger = new LoggerConfiguration()
-  .WriteTo.MySql(
-    "yourConnectionString")
+  .WriteTo.MySql("yourConnectionString")
   .CreateLogger();
 ```
 
@@ -22,9 +21,12 @@ var logger = new LoggerConfiguration()
     MySqlSinkOptions.Default,
     MySqlColumnOptions.Default
       .With(new IdColumnOptions { DataType = new DataType(Kind.Guid), Name = "Id" })
-      .With(new CustomColumnOptions { DataType = new DataType(Kind.Varchar, 128), 
+      .With(new CustomColumnOptions 
+      { 
+        DataType = new DataType(Kind.Varchar, 128), 
         Name = "Application", 
-        Value = "YourAppName" }))
+        Value = "YourAppName" 
+      }))
   .CreateLogger();
 ```
 
@@ -43,9 +45,11 @@ var logger = new LoggerConfiguration()
       IdColumnOptions = new IdColumnOptions { Name = "Guid", DataType = new DataType(Kind.Guid) },
       TimeStampColumnOptions = new TimeStampColumnOptions { Name = "TimeStamp", UseUtc = true }
       MessageTemplateColumnOptions = new MessageTemplateColumnOptions { Name = "Message" },
-      LogEventColumnOptions = new LogEventColumnOptions { 
+      LogEventColumnOptions = new LogEventColumnOptions 
+      { 
         Name = "Properties", 
-        EventSerializer = EventSerializer.Json }
+        EventSerializer = EventSerializer.Json 
+      }
     })
   .CreateLogger();
 ```
