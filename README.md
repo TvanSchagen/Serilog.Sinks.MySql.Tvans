@@ -14,14 +14,15 @@ var logger = new LoggerConfiguration()
   .CreateLogger();
 ```
 
-Default with options for specified columns
+Default with options for specified columns, or custom columns
 ```cs
 var logger = new LoggerConfiguration()
   .WriteTo.MySql(
     "yourConnectionString", 
     MySqlSinkOptions.Default,
     MySqlColumnOptions.Default
-      .With(new IdColumnOptions { DataType = new DataType(Kind.Guid), Name = "Id" }))
+      .With(new IdColumnOptions { DataType = new DataType(Kind.Guid), Name = "Id" })
+      .With(new CustomColumnOptions { DataType = new DataType(Kind.Varchar, 128), Name = "Application", Value = "YourAppName" }))
   .CreateLogger();
 ```
 
