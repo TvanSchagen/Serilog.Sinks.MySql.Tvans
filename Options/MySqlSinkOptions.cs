@@ -17,5 +17,7 @@ namespace Serilog.Sinks.MySql.Tvans.Options
       CreateTable = createTable;
     }
 
+    public static MySqlSinkOptions Default => new MySqlSinkOptions("Logs");
+
   }
 }

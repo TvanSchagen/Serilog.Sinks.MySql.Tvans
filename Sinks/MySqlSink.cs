@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using MySql.Data.MySqlClient;
-using Newtonsoft.Json;
 using Serilog.Core;
 using Serilog.Debugging;
 using Serilog.Events;
@@ -33,20 +33,23 @@ namespace Serilog.Sinks.MySql.Tvans.Sinks
       }
     }
 
+    public IEnumerable<IColumnOptions> GetInsertColumns() => _columnOptions
+      .GetAll()
+      .Where(c => c.Name != null)
+      // exclude id column with auto increment because it 
+      // does not accept a value
+      .Where(c => !(c is IdColumnOptions idc &&
+                    idc.DataType.Type == Kind.AutoIncrementInt));
+
     public void Emit(LogEvent logEvent)
     {
       using var con = GetConnection();
       var cmd = GetInsertCommand(con);
 
-      var columns = _columnOptions
-        .GetAll()
-        .Where(c => c.Name != null)
-        .ToList();
-
       var logMessageString = new StringWriter(new StringBuilder());
       logEvent.RenderMessage(logMessageString);
 
-      foreach (var column in columns)
+      foreach (var column in GetInsertColumns())
       {
         var value = column switch
         {
@@ -59,10 +62,8 @@ namespace Serilog.Sinks.MySql.Tvans.Sinks
           ExceptionColumnOptions _ => logEvent.Exception?.ToString(),
           MessageColumnOptions _ => logMessageString.ToString(),
           MessageTemplateColumnOptions _ => logEvent.MessageTemplate.ToString(),
-          LogEventColumnOptions logEventColumn => logEvent.Properties.Any() 
-            ? logEventColumn.EventSerializer == EventSerializer.Json 
-              ? SerializeToJson(logEvent.Properties) 
-              : SerializeToXml(logEvent.Properties)
+          LogEventColumnOptions logEventColumn => logEvent.Properties.Any()
+            ? Serialize(logEvent.Properties, logEventColumn.EventSerializer) 
             : string.Empty,
           LevelColumnOptions _ => logEvent.Level.ToString(),
           _ => throw new ArgumentOutOfRangeException(nameof(column))
@@ -80,27 +81,20 @@ namespace Serilog.Sinks.MySql.Tvans.Sinks
       }
     }
 
-    public string SerializeToJson(IReadOnlyDictionary<string, LogEventPropertyValue> dict)
+    public string Serialize(IReadOnlyDictionary<string, LogEventPropertyValue> dict, EventSerializer serializer)
     {
-      return JsonConvert.SerializeObject(dict);
-    }
+      var unwrapped = dict.ToDictionary(
+          kvp => kvp.Key, 
+          kvp => kvp.Value
+            .ToString()
+            .TrimStart('"')
+            .TrimEnd('"'));
 
-    public string SerializeToXml(IReadOnlyDictionary<string, LogEventPropertyValue> dict)
-    {
-      throw new NotImplementedException();
-    }
-
-    public string GetColumnNameFromType(IColumnOptions column)
-    {
-      return column switch
+      return serializer switch
       {
-        IdColumnOptions idColumn => idColumn.Name,
-        ExceptionColumnOptions excColumn => excColumn.Name,
-        MessageColumnOptions msgColumn => msgColumn.Name,
-        MessageTemplateColumnOptions msgTemplateColumn => msgTemplateColumn.Name,
-        LogEventColumnOptions logEventColumn => logEventColumn.Name,
-        LevelColumnOptions levelColumn => levelColumn.Name,
-        _ => throw new ArgumentOutOfRangeException(nameof(column))
+          EventSerializer.Json => JsonSerializer.Serialize(unwrapped),
+          EventSerializer.Xml => throw new NotImplementedException(),
+          _ => throw new NotImplementedException(),
       };
     }
 
@@ -123,23 +117,23 @@ namespace Serilog.Sinks.MySql.Tvans.Sinks
 
     public void CreateTable()
     {
+      var sb = new StringBuilder();
       using var con = GetConnection();
       var columns = _columnOptions.GetAll()
         .Where(c => c.Name != null)
         .ToList();
-      var sb = new StringBuilder();
+
       sb.Append($"CREATE TABLE IF NOT EXISTS {_sinkOptions.TableName} (");
+      
       var index = 0;
       foreach (var column in columns)
       {
         index++;
-        if (column.Name == null)
-        {
-          throw new ArgumentNullException(column.Name, "An included column cannot be nameless.");
-        }
         sb.Append(column.Name + $" {GetDataTypeString(column)}{(index == columns.Count ? string.Empty : ", ")}");
       }
+
       sb.Append(")");
+
       var cmd = new MySqlCommand(sb.ToString(), con);
       cmd.ExecuteNonQuery();
     }
@@ -152,7 +146,7 @@ namespace Serilog.Sinks.MySql.Tvans.Sinks
         (Kind.TimeStamp, _) => "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
         (Kind.Text, _) => "TEXT",
         (Kind.AutoIncrementInt, _) => "INT NOT NULL AUTO_INCREMENT PRIMARY KEY",
-        (Kind.Guid, _) => "CHAR(36)",
+        (Kind.Guid, _) => "CHAR(36) PRIMARY KEY",
         _ => type.Type + $"({type.Length})"
       };
     }
@@ -162,10 +156,7 @@ namespace Serilog.Sinks.MySql.Tvans.Sinks
       var cmd = new MySqlCommand();
       var sb = new StringBuilder();
 
-      var columns = _columnOptions
-        .GetAll()
-        .Where(c => c.Name != null)
-        .ToList();
+      var columns = GetInsertColumns().ToList();
 
       var columnNames = columns
         .Select(c => c.Name)

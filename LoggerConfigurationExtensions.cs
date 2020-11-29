@@ -11,17 +11,17 @@ namespace Serilog.Sinks.MySql.Tvans
     public static LoggerConfiguration MySql(
       this LoggerSinkConfiguration loggerSinkConfiguration,
       string connectionString,
-      MySqlSinkOptions sinkOptions,
+      MySqlSinkOptions sinkOptions = null,
       MySqlColumnOptions columnOptions = null)
     {
       if (sinkOptions == null)
       {
-        throw new ArgumentNullException(nameof(sinkOptions), "Sink options must be specified.");
+        sinkOptions = MySqlSinkOptions.Default;
       }
 
       if (columnOptions == null)
       {
-        columnOptions = MySqlColumnOptions.Default();
+        columnOptions = MySqlColumnOptions.Default;
       }
 
       try
