@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using MySql.Data.MySqlClient;
 using Serilog.Core;
@@ -66,6 +67,9 @@ namespace Serilog.Sinks.MySql.Tvans.Sinks
             ? Serialize(logEvent.Properties, logEventColumn.EventSerializer) 
             : string.Empty,
           LevelColumnOptions _ => logEvent.Level.ToString(),
+          // if a value was specified for the custom column, take it
+          // otherwise, look in the properties for it
+          CustomColumnOptions customColumn => customColumn.Value ?? GetValueOrNull(logEvent.Properties, customColumn.Name),
           _ => throw new ArgumentOutOfRangeException(nameof(column))
         };
         cmd.Parameters["@" + column.Name].Value = value;
@@ -81,6 +85,15 @@ namespace Serilog.Sinks.MySql.Tvans.Sinks
       }
     }
 
+    public string GetValueOrNull(IReadOnlyDictionary<string, LogEventPropertyValue> dict, string propertyName) 
+    {
+      if (dict.Any(kvp => kvp.Key.Equals(propertyName, StringComparison.InvariantCultureIgnoreCase))) 
+      {
+        return dict.Single(kvp => kvp.Key.Equals(propertyName, StringComparison.InvariantCultureIgnoreCase)).Value.ToString();
+      }
+      return "NULL";
+    }
+
     public string Serialize(IReadOnlyDictionary<string, LogEventPropertyValue> dict, EventSerializer serializer)
     {
       var unwrapped = dict.ToDictionary(
@@ -90,10 +103,11 @@ namespace Serilog.Sinks.MySql.Tvans.Sinks
             .TrimStart('"')
             .TrimEnd('"'));
 
+      var options = new JsonSerializerOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+
       return serializer switch
       {
-          EventSerializer.Json => JsonSerializer.Serialize(unwrapped),
-          EventSerializer.Xml => throw new NotImplementedException(),
+          EventSerializer.Json => JsonSerializer.Serialize(unwrapped, options),
           _ => throw new NotImplementedException(),
       };
     }
@@ -129,10 +143,10 @@ namespace Serilog.Sinks.MySql.Tvans.Sinks
       foreach (var column in columns)
       {
         index++;
-        sb.Append(column.Name + $" {GetDataTypeString(column)}{(index == columns.Count ? string.Empty : ", ")}");
+        sb.Append(column.Name + $" {GetDataTypeString(column)}, ");
       }
 
-      sb.Append(")");
+      sb.Append($"PRIMARY KEY ({columns.Single(c => c is IdColumnOptions).Name}))");
 
       var cmd = new MySqlCommand(sb.ToString(), con);
       cmd.ExecuteNonQuery();
@@ -145,8 +159,8 @@ namespace Serilog.Sinks.MySql.Tvans.Sinks
       {
         (Kind.TimeStamp, _) => "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
         (Kind.Text, _) => "TEXT",
-        (Kind.AutoIncrementInt, _) => "INT NOT NULL AUTO_INCREMENT PRIMARY KEY",
-        (Kind.Guid, _) => "CHAR(36) PRIMARY KEY",
+        (Kind.AutoIncrementInt, _) => "INT NOT NULL AUTO_INCREMENT",
+        (Kind.Guid, _) => "CHAR(36)",
         _ => type.Type + $"({type.Length})"
       };
     }

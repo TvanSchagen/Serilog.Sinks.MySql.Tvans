@@ -18,16 +18,23 @@ namespace Serilog.Sinks.MySql.Tvans.Options
 
     public ExceptionColumnOptions ExceptionColumnOptions { get; set; }
 
-    public List<IColumnOptions> GetAll() => new List<IColumnOptions>
+    public List<IColumnOptions> AdditonalColumns { get; set; } = new List<IColumnOptions>();
+
+    public List<IColumnOptions> GetAll()
     {
-      IdColumnOptions,
-      TimeStampColumnOptions,
-      LogEventColumnOptions,
-      MessageColumnOptions,
-      MessageTemplateColumnOptions,
-      LevelColumnOptions,
-      ExceptionColumnOptions
-    };
+      var list = new List<IColumnOptions>
+      {
+        IdColumnOptions,
+        TimeStampColumnOptions,
+        LogEventColumnOptions,
+        MessageColumnOptions,
+        MessageTemplateColumnOptions,
+        LevelColumnOptions,
+        ExceptionColumnOptions
+      };
+      list.AddRange(AdditonalColumns);
+      return list;
+    }
 
     public static MySqlColumnOptions Default => new MySqlColumnOptions
     {
@@ -46,6 +53,11 @@ namespace Serilog.Sinks.MySql.Tvans.Options
   {
     public static MySqlColumnOptions With(this MySqlColumnOptions opts, IColumnOptions columnOptions)
     {
+      if (columnOptions is CustomColumnOptions)
+      {
+        opts.AdditonalColumns.Add(columnOptions);
+        return opts;
+      }
       var type = columnOptions.GetType().Name;
       opts.GetType().GetProperty(type).SetValue(opts, columnOptions);
       return opts;
@@ -57,6 +69,7 @@ namespace Serilog.Sinks.MySql.Tvans.Options
       opts.GetType().GetProperty(type).SetValue(opts, columnOptions);
       return opts;
     }
+
   }
 
 
@@ -107,11 +120,21 @@ namespace Serilog.Sinks.MySql.Tvans.Options
     public string Name { get; set; }
   }
 
+  public class CustomColumnOptions : IColumnOptions
+  {
+    public string Name { get; set; }
+    
+    public DataType DataType { get; set; }
+
+    public object Value { get; set; }
+  }
+
   public class DataType
   {
-    public DataType(Kind type)
+    public DataType(Kind type, int length = 65535)
     {
       Type = type;
+      Length = length;
     }
 
     public Kind Type { get; set; }
