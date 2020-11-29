@@ -57,9 +57,7 @@ namespace Serilog.Sinks.MySql.Tvans.Sinks
           IdColumnOptions idColumn => idColumn.DataType.Type == Kind.AutoIncrementInt 
             ? "NULL" 
             : Guid.NewGuid().ToString(),
-          TimeStampColumnOptions tsColumn => tsColumn.UseUtc
-            ? logEvent.Timestamp.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss.fff")
-            : logEvent.Timestamp.ToString("yyyy-MM-dd HH:mm:ss.fff"),
+          TimeStampColumnOptions tsColumn => GetDateTimeFormat(logEvent.Timestamp, tsColumn.DataType.Type, tsColumn.UseUtc),
           ExceptionColumnOptions _ => logEvent.Exception?.ToString(),
           MessageColumnOptions _ => logMessageString.ToString(),
           MessageTemplateColumnOptions _ => logEvent.MessageTemplate.ToString(),
@@ -70,7 +68,7 @@ namespace Serilog.Sinks.MySql.Tvans.Sinks
           // if a value was specified for the custom column, take it
           // otherwise, look in the properties for it
           CustomColumnOptions customColumn => customColumn.Value ?? GetValueOrNull(logEvent.Properties, customColumn.Name),
-          _ => throw new ArgumentOutOfRangeException(nameof(column))
+          _ => throw new NotSupportedException(nameof(column))
         };
         cmd.Parameters["@" + column.Name].Value = value;
       }
@@ -83,6 +81,18 @@ namespace Serilog.Sinks.MySql.Tvans.Sinks
       {
         SelfLog.WriteLine("{0}: {1}", exc.Message, exc.StackTrace);
       }
+    }
+
+    public object GetDateTimeFormat(DateTimeOffset date, Kind dataType, bool utc)
+    {
+        const string defaultFormat = "yyyy-MM-dd HH:mm:ss.ffffff";
+        return (dataType, utc) switch
+        {
+            (Kind.TimeStamp, false) => date.ToString(defaultFormat),
+            (Kind.TimeStamp, true) => date.ToUniversalTime().ToString(defaultFormat),
+            (Kind.UnixTime, _) => date.ToUnixTimeMilliseconds(),
+            _ => throw new NotImplementedException()
+        };
     }
 
     public string GetValueOrNull(IReadOnlyDictionary<string, LogEventPropertyValue> dict, string propertyName) 
@@ -157,10 +167,12 @@ namespace Serilog.Sinks.MySql.Tvans.Sinks
       var type = column.DataType;
       return (type.Type, type.Length) switch
       {
-        (Kind.TimeStamp, _) => "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+        (Kind.TimeStamp, _) => "TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6)",
+        (Kind.DateTime, _) => "DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6)",
         (Kind.Text, _) => "TEXT",
         (Kind.AutoIncrementInt, _) => "INT NOT NULL AUTO_INCREMENT",
         (Kind.Guid, _) => "CHAR(36)",
+        (Kind.UnixTime, _) => "BIGINT",
         _ => type.Type + $"({type.Length})"
       };
     }

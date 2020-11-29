@@ -139,7 +139,7 @@ namespace Serilog.Sinks.MySql.Tvans.Options
 
     public Kind Type { get; set; }
 
-    public int Length { get; set; } = 65535;
+    public int Length { get; set; }
   }
 
   public enum Kind
@@ -148,6 +148,7 @@ namespace Serilog.Sinks.MySql.Tvans.Options
     Varchar,
     DateTime,
     TimeStamp,    
+    UnixTime,
     Guid,
     AutoIncrementInt
   }
