@@ -22,7 +22,9 @@ var logger = new LoggerConfiguration()
     MySqlSinkOptions.Default,
     MySqlColumnOptions.Default
       .With(new IdColumnOptions { DataType = new DataType(Kind.Guid), Name = "Id" })
-      .With(new CustomColumnOptions { DataType = new DataType(Kind.Varchar, 128), Name = "Application", Value = "YourAppName" }))
+      .With(new CustomColumnOptions { DataType = new DataType(Kind.Varchar, 128), 
+        Name = "Application", 
+        Value = "YourAppName" }))
   .CreateLogger();
 ```
 
@@ -41,7 +43,9 @@ var logger = new LoggerConfiguration()
       IdColumnOptions = new IdColumnOptions { Name = "Guid", DataType = new DataType(Kind.Guid) },
       TimeStampColumnOptions = new TimeStampColumnOptions { Name = "TimeStamp", UseUtc = true }
       MessageTemplateColumnOptions = new MessageTemplateColumnOptions { Name = "Message" },
-      LogEventColumnOptions = new LogEventColumnOptions { Name = "Properties", EventSerializer = EventSerializer.Json }
+      LogEventColumnOptions = new LogEventColumnOptions { 
+        Name = "Properties", 
+        EventSerializer = EventSerializer.Json }
     })
   .CreateLogger();
 ```
