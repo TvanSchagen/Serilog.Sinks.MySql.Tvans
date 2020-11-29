@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <LangVersion>latest</LangVersion>
-    <Version>0.0.3</Version>
+    <Version>0.1.1-alpha</Version>
     <Authors>T. van Schagen</Authors>
     <Company>Uniserver</Company>
     <Product />
@@ -11,6 +11,14 @@
     <Copyright />
     <PackageLicenseExpression></PackageLicenseExpression>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+    <PackageProjectUrl>https://github.com/TvanSchagen/Serilog.Sinks.MySql.Tvans</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/TvanSchagen/Serilog.Sinks.MySql.Tvans</RepositoryUrl>
+    <PackageIcon>icon.jpg</PackageIcon>
+    <PackageTags>serilog sink mysql logging</PackageTags>
+    <NeutralLanguage>en</NeutralLanguage>
+    <AssemblyVersion>0.1.1.0</AssemblyVersion>
+    <FileVersion>0.1.1</FileVersion>
+    <PackageVersion>0.1.1-alpha</PackageVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,6 +29,10 @@
 
   <ItemGroup>
     <None Include="..\LICENSE.txt">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+    <None Include="..\icon.jpg">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>
