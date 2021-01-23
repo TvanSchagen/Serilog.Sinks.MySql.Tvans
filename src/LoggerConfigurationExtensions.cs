@@ -23,22 +23,23 @@ namespace Serilog.Sinks.MySql.Tvans
 {
 	public static class LoggerConfigurationExtensions
 	{
+		/// <summary>
+		/// Allows the sink to integrate into the SeriLog configuration through code.
+		/// </summary>
+		/// <param name="loggerSinkConfiguration"></param>
+		/// <param name="connectionString">Determines how to connect to the desired database to log to.</param>
+		/// <param name="sinkOptions">Defines the behaviour of the sink.</param>
+		/// <param name="columnOptions">Defines which columns and types to use.</param>
+		/// <returns>A logger configuration</returns>
 		public static LoggerConfiguration MySql(
 		  this LoggerSinkConfiguration loggerSinkConfiguration,
 		  string connectionString,
 		  MySqlSinkOptions sinkOptions = null,
 		  MySqlColumnOptions columnOptions = null)
 		{
-			if (sinkOptions == null)
-			{
-				sinkOptions = MySqlSinkOptions.Default;
-			}
-
-			if (columnOptions == null)
-			{
-				columnOptions = MySqlColumnOptions.Default;
-			}
-
+			sinkOptions ??= MySqlSinkOptions.Default;
+			columnOptions ??= MySqlColumnOptions.Default;
+			
 			try
 			{
 				return loggerSinkConfiguration.Sink(

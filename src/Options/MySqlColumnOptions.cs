@@ -34,24 +34,37 @@ namespace Serilog.Sinks.MySql.Tvans.Options
 
 		public ExceptionColumnOptions ExceptionColumnOptions { get; set; }
 
-		public List<IColumnOptions> AdditonalColumns { get; set; } = new List<IColumnOptions>();
+		public IList<IColumnOptions> AdditonalColumns { get; set; } = new List<IColumnOptions>();
 
-		public List<IColumnOptions> GetAll()
+		public IList<IColumnOptions> All
 		{
-			var list = new List<IColumnOptions>
+			get
 			{
-				IdColumnOptions,
-				TimeStampColumnOptions,
-				LogEventColumnOptions,
-				MessageColumnOptions,
-				MessageTemplateColumnOptions,
-				LevelColumnOptions,
-				ExceptionColumnOptions
-			};
-			list.AddRange(AdditonalColumns);
-			return list;
+				var list = new List<IColumnOptions>
+				{
+					IdColumnOptions,
+					TimeStampColumnOptions,
+					LogEventColumnOptions,
+					MessageColumnOptions,
+					MessageTemplateColumnOptions,
+					LevelColumnOptions,
+					ExceptionColumnOptions
+				};
+				list.AddRange(AdditonalColumns);
+				return list;
+			}
 		}
 
+		/// <summary>
+		/// Returns the default set of columns that will be used for logging to.
+		///		Id
+		///		TimeStamp
+		///		LogEvent
+		///		Message
+		///		MessageTemplate
+		///		Level
+		///		Exception
+		/// </summary>
 		public static MySqlColumnOptions Default => new MySqlColumnOptions
 		{
 			IdColumnOptions = new IdColumnOptions { Name = "Id" },
@@ -63,36 +76,47 @@ namespace Serilog.Sinks.MySql.Tvans.Options
 			ExceptionColumnOptions = new ExceptionColumnOptions { Name = "Exception" }
 		};
 
-	}
-
-	public static class MySqlColumnOptionsExtensions
-	{
-		public static MySqlColumnOptions With(this MySqlColumnOptions opts, IColumnOptions columnOptions)
+		/// <summary>
+		/// Specifies properties for a single column. 
+		/// </summary>
+		/// <param name="opts">Extension method entry.</param>
+		/// <param name="columnOptions">The column options to be used.</param>
+		/// <returns>The options object with the new configuration, or an exception when no name is specified.</returns>
+		public MySqlColumnOptions With(IColumnOptions columnOptions)
 		{
-			if (string.IsNullOrWhiteSpace(columnOptions.Name))
+			if (string.IsNullOrWhiteSpace(columnOptions?.Name))
 			{
 				throw new InvalidOperationException("When specifying a column, a name must be included.");
 			}
 
 			if (columnOptions is CustomColumnOptions)
 			{
-				opts.AdditonalColumns.Add(columnOptions);
-				return opts;
+				AdditonalColumns.Add(columnOptions);
+				return this;
 			}
 			var type = columnOptions.GetType().Name;
-			opts.GetType().GetProperty(type).SetValue(opts, columnOptions);
-			return opts;
+			GetType().GetProperty(type).SetValue(this, columnOptions);
+			return this;
 		}
 
-		public static MySqlColumnOptions Exclude(this MySqlColumnOptions opts, IColumnOptions columnOptions)
+		/// <summary>
+		/// Excludes a column that is enabled by <see cref="MySqlColumnOptions.Default"/>.
+		/// </summary>
+		/// <param name="opts">Extension method entry.</param>
+		/// <param name="columnOptions">An empty column options object of the to-be excluded type.</param>
+		/// <returns>The options with the new configuration, or an exception if the name is specified.</returns>
+		public MySqlColumnOptions Exclude(IColumnOptions columnOptions)
 		{
+			if (columnOptions == null || columnOptions.Name != null)
+			{
+				throw new InvalidOperationException("When excluding a column, an empty column object is expected (with no name).");
+			}
 			var type = columnOptions.GetType().Name;
-			opts.GetType().GetProperty(type).SetValue(opts, columnOptions);
-			return opts;
+			GetType().GetProperty(type).SetValue(this, columnOptions);
+			return this;
 		}
 
 	}
-
 
 	public interface IColumnOptions
 	{
@@ -110,7 +134,9 @@ namespace Serilog.Sinks.MySql.Tvans.Options
 
 	public class LevelColumnOptions : IColumnOptions
 	{
-		public DataType DataType { get; set; } = new DataType(Kind.Varchar) { Length = 16 };
+		public const int DEFAULT_LEVEL_COLUMN_LENGTH = 16;
+
+		public DataType DataType { get; set; } = new DataType(Kind.Varchar) { Length = DEFAULT_LEVEL_COLUMN_LENGTH };
 
 		public string Name { get; set; }
 	}
@@ -138,7 +164,7 @@ namespace Serilog.Sinks.MySql.Tvans.Options
 
 	public class TimeStampColumnOptions : IColumnOptions
 	{
-		public bool UseUtc { get; set; } = false;
+		public bool UseUtc { get; set; }
 
 		public DataType DataType { get; set; } = new DataType(Kind.TimeStamp);
 
@@ -156,7 +182,9 @@ namespace Serilog.Sinks.MySql.Tvans.Options
 
 	public class DataType
 	{
-		public DataType(Kind type, int length = 65535)
+		public const int DEFAULT_COLUMN_LENGTH = 65535;
+
+		public DataType(Kind type, int length = DEFAULT_COLUMN_LENGTH)
 		{
 			Type = type;
 			Length = length;
