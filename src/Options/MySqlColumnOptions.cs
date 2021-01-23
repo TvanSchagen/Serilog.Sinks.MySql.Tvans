@@ -134,9 +134,9 @@ namespace Serilog.Sinks.MySql.Tvans.Options
 
 	public class LevelColumnOptions : IColumnOptions
 	{
-		public const int DEFAULT_LEVEL_COLUMN_LENGTH = 16;
+		public static int DefaultColumnLength => 16;
 
-		public DataType DataType { get; set; } = new DataType(Kind.Varchar) { Length = DEFAULT_LEVEL_COLUMN_LENGTH };
+		public DataType DataType { get; set; } = new DataType(Kind.Varchar) { Length = DefaultColumnLength };
 
 		public string Name { get; set; }
 	}
@@ -182,12 +182,21 @@ namespace Serilog.Sinks.MySql.Tvans.Options
 
 	public class DataType
 	{
-		public const int DEFAULT_COLUMN_LENGTH = 65535;
+		public static int DefaultColumnLength => 65535;
 
-		public DataType(Kind type, int length = DEFAULT_COLUMN_LENGTH)
+		public DataType(Kind type, int length = 0)
 		{
+			if (length < 0)
+			{
+				throw new ArgumentOutOfRangeException(nameof(length), "Data length cannot be negative.");
+			}
+
 			Type = type;
-			Length = length;
+			// as the default parameter must be a compile-time constant,
+			// we set it to zero, and check for zero to assign the default
+			Length = length == 0
+				? DefaultColumnLength 
+				: length;
 		}
 
 		public Kind Type { get; set; }

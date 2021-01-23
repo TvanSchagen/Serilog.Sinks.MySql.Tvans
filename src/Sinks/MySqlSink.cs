@@ -97,8 +97,16 @@ namespace Serilog.Sinks.MySql.Tvans.Sinks
 			}
 		}
 
-		public object GetInsertObject(IColumnOptions column, LogEvent logEvent, string logMessageString)
+		public static object GetInsertObject(
+			IColumnOptions column, 
+			LogEvent logEvent, 
+			string logMessageString)
 		{
+			if (logEvent == null)
+			{
+				throw new ArgumentNullException(nameof(logEvent));
+			}
+
 			return column switch
 			{
 				IdColumnOptions idColumn => idColumn.DataType.Type == Kind.AutoIncrementInt? "NULL" : Guid.NewGuid().ToString(),
@@ -116,15 +124,15 @@ namespace Serilog.Sinks.MySql.Tvans.Sinks
 		}
 
 		public static object GetDateTimeFormat(
-			DateTimeOffset timeStamp, 
+			DateTimeOffset dateTime, 
 			Kind dataType, 
 			bool utc)
 		{
 			return (dataType, utc) switch
 			{
-				(Kind.TimeStamp, false) => timeStamp.ToString(DefaultTimeStampFormat, CultureInfo.InvariantCulture),
-				(Kind.TimeStamp, true) => timeStamp.ToUniversalTime().ToString(DefaultTimeStampFormat, CultureInfo.InvariantCulture),
-				(Kind.UnixTime, _) => timeStamp.ToUnixTimeMilliseconds(),
+				(Kind.TimeStamp, false) => dateTime.ToString(DefaultTimeStampFormat, CultureInfo.InvariantCulture),
+				(Kind.TimeStamp, true) => dateTime.ToUniversalTime().ToString(DefaultTimeStampFormat, CultureInfo.InvariantCulture),
+				(Kind.UnixTime, _) => dateTime.ToUnixTimeMilliseconds(),
 				_ => throw new NotSupportedException($"{dataType} is not supported as a date-time format.")
 			};
 		}
@@ -135,7 +143,7 @@ namespace Serilog.Sinks.MySql.Tvans.Sinks
 		/// </summary>
 		/// <param name="dict">The dictionary to get the value out of.</param>
 		/// <param name="propertyName">The dictionary key name.</param>
-		/// <returns></returns>
+		/// <returns>Dictionary value or `NULL`</returns>
 		public static string GetValueOrNull(
 			IReadOnlyDictionary<string, LogEventPropertyValue> dict, 
 			string propertyName)
