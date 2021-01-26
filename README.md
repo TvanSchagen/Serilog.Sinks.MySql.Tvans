@@ -30,11 +30,7 @@ Options for sink and columns
 var logger = new LoggerConfiguration()
   .WriteTo.MySql(
     "yourConnectionString",
-    new MySqlSinkOptions 
-    {
-      tableName = "log_events",
-      autoCreateTable = false,
-    },
+    new MySqlSinkOptions(tableName: "log_events", createTable: false),
     new MySqlColumnOptions
     {
       IdColumnOptions = new IdColumnOptions { Name = "Guid", DataType = new DataType(Kind.Guid) },
