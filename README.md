@@ -8,6 +8,8 @@ Provides a Serilog Sink for MySql with customizability in columns, data types. I
 
 Default
 ```cs
+using Serilog.Sinks.MySql.Tvans.Sinks;
+
 var logger = new LoggerConfiguration()
   .WriteTo.MySql(
     "yourConnectionString")
@@ -16,6 +18,9 @@ var logger = new LoggerConfiguration()
 
 Default with options for specified columns
 ```cs
+using Serilog.Sinks.MySql.Tvans.Options;
+using Serilog.Sinks.MySql.Tvans.Sinks;
+
 var logger = new LoggerConfiguration()
   .WriteTo.MySql(
     "yourConnectionString", 
@@ -27,6 +32,9 @@ var logger = new LoggerConfiguration()
 
 Options for sink and columns
 ```cs
+using Serilog.Sinks.MySql.Tvans.Options;
+using Serilog.Sinks.MySql.Tvans.Sinks;
+
 var logger = new LoggerConfiguration()
   .WriteTo.MySql(
     "yourConnectionString",
