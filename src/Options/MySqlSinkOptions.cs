@@ -35,7 +35,7 @@ namespace Serilog.Sinks.MySql.Tvans.Options
 		/// <summary>
 		/// Returns the default options for the sink, which is the default table name of `Logs`.
 		/// </summary>
-		public static MySqlSinkOptions Default => new MySqlSinkOptions("Logs");
+		public static MySqlSinkOptions Default => new("Logs");
 
 	}
 }

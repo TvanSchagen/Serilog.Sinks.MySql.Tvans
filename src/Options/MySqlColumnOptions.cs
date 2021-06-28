@@ -65,7 +65,7 @@ namespace Serilog.Sinks.MySql.Tvans.Options
 		///		Level
 		///		Exception
 		/// </summary>
-		public static MySqlColumnOptions Default => new MySqlColumnOptions
+		public static MySqlColumnOptions Default => new() 
 		{
 			IdColumnOptions = new IdColumnOptions { Name = "Id" },
 			TimeStampColumnOptions = new TimeStampColumnOptions { Name = "TimeStamp" },
